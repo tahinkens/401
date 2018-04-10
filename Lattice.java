@@ -15,8 +15,9 @@ public class Lattice {
      * 
      * @param latticeType desired Bravais lattice (SimpleCubic, FCC, BCC, HCP)
      * @param N desired number of atoms to simulate
+     * @param atomType the species to be simulated
      */
-    public Lattice(CrystalLattice latticeType, int N) {
+    public Lattice(CrystalLattice latticeType, int N, AtomInfo atomType) {
         
         inhabitants = new Atom[N];
         inhabitants = initializePositions(latticeType);
@@ -50,9 +51,14 @@ public class Lattice {
         }
         return inhabitants;
     }
-    
+
     public Atom[] getInhabitants() {
         
         return inhabitants;
+    }
+    
+    public void setInhabitants(Atom[] inhabitants) {
+        
+        this.inhabitants = inhabitants;
     }
 }

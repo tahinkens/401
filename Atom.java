@@ -1,6 +1,7 @@
 package COMMoDORE;
 
 import static COMMoDORE.Main.*;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -14,14 +15,16 @@ public class Atom {
     
     public AtomInfo atomType;
     
-    private double v, p, pe, ke, m;
-    private double[] velocity;
-    private double[] position = {0,0};
+    private double v, p, pe, ke; //scalar properties
+    private double[] velocity, momentum = {0,0,0}; //vector properties
+    private double[] position = {0,0,0};
+    
+    private final double m;
     
     private final Random rng = new Random();
     
     /**
-     * Instantiates a new Atom of type
+     * Instantiates a new Atom of species atomInfo. 
      * @param atomInfo 
      */
     public Atom(AtomInfo atomInfo) {
@@ -33,6 +36,29 @@ public class Atom {
         this.ke = 0;
         this.pe = 0;
         this.m = atomInfo.m;
+    }
+    
+    /**
+     * Reassigns values to the properties of an atom. Calculates new values for
+     * velocity, momentum, their magnitudes, kinetic and potential energies,
+     * and the position of the atom.
+     * 
+     * @param timestep the amount of time passed since last update (this should
+     * generally be the universal timestep of the simulation)
+     */
+    public void update(double timestep) {
+        
+        v = Math.sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1] + velocity[2]*velocity[2]);
+        p = m * v;
+        ke = 0.5 * m * v*v;
+        //pe = lennard jones?
+        for(int i = 0; i < 3; i++) {
+            momentum[i] = m * velocity[i];
+        }
+        for(int i = 0; i < 3; i++) { //x1 = x0 + vt
+            position[i] = position[i] + velocity[i] * timestep;
+        }
+        //velocity vector needs to change due to particle interactions
     }
     
     /**
@@ -67,16 +93,16 @@ public class Atom {
      */
     private double[] marsagliaRandomGenerator() {
         
-        double u = 0, v = 0, s = 2;
+        double x = 0, y = 0, s = 2; //s must be initialized to something > 1
         double[] rv = new double[2];
         
         while(s > 1) {
-            u = rng.nextDouble() * 2 - 1;
-            v = rng.nextDouble() * 2 - 1;
-            s = u*u + v*v;
+            x = rng.nextDouble() * 2 - 1; //uniform double b/w -1 and 1
+            y = rng.nextDouble() * 2 - 1;
+            s = x*x + y*y;
         }
-        rv[0] = u * Math.sqrt((-2 * Math.log(s)) / s);
-        rv[1] = v * Math.sqrt((-2 * Math.log(s)) / s);
+        rv[0] = x * Math.sqrt((-2 * Math.log(s)) / s); //transform to normals
+        rv[1] = y * Math.sqrt((-2 * Math.log(s)) / s);
         return rv;
     }
     
@@ -95,11 +121,19 @@ public class Atom {
      */
     public double getSpeed() {
         
-        return Math.sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1] + velocity[2]*velocity[2]);
+        return v;
     }
     
     public void setPosition(double[] pos) {
         
         this.position = pos;
+    }
+    
+    @Override
+    public String toString() {
+        
+        return "\\mag(v)=" + v + " p=" + p + " ke=" + ke + " pe=" + pe + 
+                " m=" + m + " v=" + Arrays.toString(velocity) + " r=" + 
+                Arrays.toString(position);
     }
 }

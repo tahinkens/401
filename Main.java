@@ -10,13 +10,12 @@ import java.util.Arrays;
  * @since 0.1.0
  */
 public class Main {
+    
+    protected static final double TIMESTEP = 5e-15; //seconds
 
     static final double K_B = 1.38064852e-23; // J/K
     static final double PI = 3.1415926;
     static final CrystalLattice FCC = CrystalLattice.FCC;
-    static final AtomInfo ALUMINUM = AtomInfo.ALUMINUM;
-    static final AtomInfo HELIUM = AtomInfo.HELIUM;
-    static final AtomInfo XENON = AtomInfo.XENON;
     
     static Random rng = new Random();
     
@@ -31,17 +30,25 @@ public class Main {
         double potential = lennardJones(e,s,r);
         System.out.println("Interatomic potential = " + potential + " J");
         
-        Atom[] atoms = {};
-        Lattice testLattice = new Lattice(FCC,2,AtomInfo.ALUMINUM);
-        testLattice.setInhabitants(atoms);
         
+        Lattice testLattice = new Lattice(FCC,2,AtomInfo.ALUMINUM);
+        Atom[] atoms = new Atom[testLattice.getInhabitants().length];
+        for(int i = 0; i < testLattice.getInhabitants().length; i++) {
+            //testLattice.setInhabitants(atoms);
+            atoms[i] = new Atom(AtomInfo.ALUMINUM);
+            atoms[i].initializeVelocityVector(3,298,atoms[i].atomType);
+            atoms[i].update(TIMESTEP);
+            System.out.println(Arrays.toString(atoms[i].getVelocity()) + ", " + atoms[i].getSpeed());
+        }
+        testLattice.setInhabitants(atoms);
         System.out.println(Arrays.toString(testLattice.getInhabitants()));
         
-        Atom al = new Atom(ALUMINUM);
-        al.initializeVelocityVector(3, 298, al.atomType);
-        
-        System.out.println(Arrays.toString(al.getVelocity()));
-        System.out.println(al.getSpeed());
+        //testing of velocity initialization for atoms
+//        Atom al = new Atom(AtomInfo.ALUMINUM);
+//        al.initializeVelocityVector(3,298,al.atomType);
+//        
+//        System.out.println(Arrays.toString(al.getVelocity()));
+//        System.out.println(al.getSpeed());
 
         //Old velocity distribution testing
 //        double[] v;
