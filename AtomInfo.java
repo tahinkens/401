@@ -13,7 +13,8 @@ public enum AtomInfo {
     
     HELIUM(2,6.646632348e-27),
     ALUMINUM(13,4.48039e-27),
-    COPPER(29,1.0552308203254732e-25);
+    COPPER(29,1.0552308203254732e-25),
+    XENON(54,2.1802e-25);
     
     public final int Z; //atomic number
     public final double m; //mass per atom
