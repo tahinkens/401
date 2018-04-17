@@ -11,10 +11,10 @@ import java.util.Arrays;
  */
 public class Main {
     
-    protected static final double TIMESTEP = 5e-15; //seconds
-
-    static final double K_B = 1.38064852e-23; // J/K
-    static final double PI = 3.1415926;
+    static final double TIMESTEP = 5e-15; //universal simulation timestep/s
+    static final double K_B = 1.38064852e-23; // Boltzmann's constant/J-K^-1
+    static final double PI = 3.1415926; //mathematical constant pi
+    static final double[] E_X = {1,0,0}, E_Y = {0,1,0} ,E_Z = {0,0,1}; //unit vectors/m,m,m
     static final CrystalLattice FCC = CrystalLattice.FCC;
     
     static Random rng = new Random();
@@ -24,24 +24,38 @@ public class Main {
      */
     public static void main(String[] args) {
         
-        double e = 0.997; // kJ/mol (energy)
-        double s = 3.4e-10, r = 4e-10; //m (length)
+        final double testE = 0.997; // kJ/mol (energy/mol)
+        final double testS = 3.4e-10, testR = 4e-10; //m (length)
         
-        double potential = lennardJones(e,s,r);
-        System.out.println("Interatomic potential = " + potential + " J");
+        final double alE = 0.368; //kJ/mol
+        final double alInteratomicR = 1.23e-10; //m (eq. sep from Totten and Mackenzie)
+        
+        //final Atom[] = new
+        
+        //double potential = lennardJones(testE,testS,testR);
+        //System.out.println("Test potential = " + potential + " J");
         
         
-        Lattice testLattice = new Lattice(FCC,2,AtomInfo.ALUMINUM);
+        Lattice testLattice = new Lattice(FCC,2,AtomInfo.ALUMINUM,true);
         Atom[] atoms = new Atom[testLattice.getInhabitants().length];
         for(int i = 0; i < testLattice.getInhabitants().length; i++) {
             //testLattice.setInhabitants(atoms);
             atoms[i] = new Atom(AtomInfo.ALUMINUM);
-            atoms[i].initializeVelocityVector(3,298,atoms[i].atomType);
-            atoms[i].update(TIMESTEP);
+            atoms[i].initializeVelocityVector(3,298);
+            //atoms[i].update(TIMESTEP,atoms); //atoms is not the right argument here
             System.out.println(Arrays.toString(atoms[i].getVelocity()) + ", " + atoms[i].getSpeed());
         }
         testLattice.setInhabitants(atoms);
+        
         System.out.println(Arrays.toString(testLattice.getInhabitants()));
+        
+        double distance = testLattice.getInhabitants()[0].getDistanceFromNeighbor(testLattice.getInhabitants()[1]);
+        System.out.println(distance);
+        
+        //unit vector testing
+        
+        //double[] vector = {2,0,-3};
+        //System.out.println(Arrays.toString(unitVector(vector)));
         
         //testing of velocity initialization for atoms
 //        Atom al = new Atom(AtomInfo.ALUMINUM);
@@ -71,39 +85,6 @@ public class Main {
 //        System.out.println("Maximum particle speed = " + maxSpeed + " m/s");
 //        System.out.println("Minimum particle speed = " + minSpeed + " m/s");
     }
-    
-    /**
-     * Calculates the potential between two atoms with a potential well depth e,
-     * interatomic separation of s, and equilibrium separation of r. Interatomic
-     * potential given in Joules.
-     * 
-     * @param e Potential well depth (energy)
-     * @param s Interatomic separation (length)
-     * @param r Equilibrium separation (length)
-     * @return Interatomic potential (J)
-     */
-    private static double lennardJones(double e, double s, double r) {
-
-        return 4 * e * (Math.pow((s/r),12) - Math.pow((s/r),6));
-    }
-    
-    /**
-     * Generates a random particle speed based on the Maxwell-Boltzmann 
-     * distribution based on thermodynamic temperature and particle mass. Speed
-     * given in m/s.
-     * 
-     * @param T Thermodynamic temperature (temperature)
-     * @param atomType The type of atom being simulated (AtomInfo)
-     * @return a randomly generated particle speed in m/s
-     */
-    private static double maxwellBoltzmann(double T, AtomInfo atomType) {
-       
-        final double a = Math.sqrt((K_B * T) / atomType.m); //where K_B is Boltzmann's constant and m is particle mass
-        final double x = rng.nextDouble();
-        
-        return Math.sqrt(2/PI) * ((x*x * Math.exp(-(x*x) / (2 * a*a))) / (a*a*a)); //FIXME this is the y-value of the pdf not speed
-    }
-    
     
     
 }
