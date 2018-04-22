@@ -78,10 +78,8 @@ public class Atom {
     protected synchronized double[] force(Atom[] atoms) {
 
         double[] f = {0,0,0}, lastf = {0,0,0}; //the force vector
-        
         double dLJ; //the derivative of the lennard jones potential
-        double[] r_hat;//position vector between two atoms
-        double[] r1 = this.position, r2, diff = new double[DIMENSIONS]; //to find the relative pos vector between two atoms
+        double[] r_hat, r1 = this.position, r2, diff = new double[DIMENSIONS]; //to find the relative pos vector between two atoms
 
         for(Atom atom : atoms) {
             if(!this.equals(atom)) { //perform calculations iff the atoms aren't the same
@@ -96,9 +94,6 @@ public class Atom {
                     f[i] += dLJ * r_hat[i];
                 }
             }
-//            for(int i = 0; i < DIMENSIONS; i++) { //do we need this? might be necessary for >2 atom systems
-//                f[i] += lastf[i];
-//            }
         }
         return f;
     }
@@ -124,9 +119,9 @@ public class Atom {
     /**
      * Randomly generates an n-dimensional velocity using a scaled Marsaglia 
      * polar method. This method attempts to approximate a Maxwell-Boltzmann
- distribution by creating randomly sampled normal values scaled by a 
- factor of sqrt(kT/m) where k is Boltzmann'equilibriumSeparation constant, T is thermodynamic 
- temp, and m is the mass of the atom of the given species.
+     * distribution by creating randomly sampled normal values scaled by a 
+     * factor of sqrt(kT/m) where k is Boltzmann'equilibriumSeparation constant, T is thermodynamic 
+     * temp, and m is the mass of the atom of the given species.
      * 
      * @param T Thermodynamic temperature (temperature)
      * @return a randomly generated particle velocity
@@ -144,7 +139,7 @@ public class Atom {
 
     /**
      * Calculates the potential between two atoms with a potential well depth e,
- interatomic separation of equilibriumSeparation, and equilibrium separation of r. Note: it
+     * interatomic separation of equilibriumSeparation, and equilibrium separation of r. Note: it
      * may be more computationally efficient to calculate the 6 term first and
      * square it to yield the 12 term.
      * 
@@ -156,6 +151,19 @@ public class Atom {
     private double lennardJones(double e, double s, double r) {
 
         return 4 * e * (Math.pow((s/r),12) - Math.pow((s/r),6));
+    }
+    
+    /**
+     * Calculates the momentum of this atom using its mass and velocity.
+     * 
+     * @return a vector containing this particle's momentum
+     */
+    protected double[] momentum() {
+        
+        for(int i = 0; i < DIMENSIONS; i++) {
+            momentum[i] = this.atomType.m * velocity[i]; //p = mv
+        }
+        return momentum;
     }
     
     /**
@@ -182,6 +190,16 @@ public class Atom {
         return 0.5 * potentialEnergy;
     }
 
+    protected synchronized double[] verlet(double[] r_initial, double[] r_previous, double[] accel) {
+        
+        double[] r_final = new double[DIMENSIONS];
+        
+        for(int i = 0; i < DIMENSIONS; i++) {
+            r_final[i] = 2 * r_initial[i] - r_previous[i] + accel[i] * TIMESTEP*TIMESTEP;
+        }
+        return r_final;
+    }
+    
     /**
      * 
      * @return the position vector of this Atom
@@ -233,16 +251,16 @@ public class Atom {
     /**
      * Generates a random particle speed based on the Maxwell-Boltzmann 
      * distribution based on thermodynamic temperature and particle mass. Speed
- given in m/equilibriumSeparation.
+     * given in m/equilibriumSeparation.
      * 
      * @param T Thermodynamic temperature (temperature)
      * @param atomType The type of atom being simulated (AtomInfo)
      * @return a randomly generated particle speed in m/equilibriumSeparation
  
- Deprecated: This function isn't used and instead initial particle 
- velocities are determined using a Marsaglia random generator and the 
- initializeVelocityVector() function above. It'equilibriumSeparation being left in for
- possible future use and posterity.
+     * Deprecated: This function isn't used and instead initial particle 
+     * velocities are determined using a Marsaglia random generator and the 
+     * initializeVelocityVector() function above. It'equilibriumSeparation being left in for
+     * possible future use and posterity.
      */
     @Deprecated
     private double maxwellBoltzmann(double T, AtomInfo atomType) {

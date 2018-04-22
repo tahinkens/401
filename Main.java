@@ -48,7 +48,7 @@ public class Main {
      */
     static final double PI = 3.1415926;
     /**
-     * This factor can be used to multiply an atoms's equilibrium
+     * This factor can be used to multiply an atom's equilibrium
      * separation to obtain a force of 0.
      */
     static final double R_MIN_FACTOR = 1.12246204830937298;
@@ -72,10 +72,39 @@ public class Main {
      */
     public static void main(String[] args) {
         
-        test(); //for testing
+        boolean verbose = true;
+        
+        double systemPotential;
+        
+        Atom[] atoms = new Atom[2];             //instantiate new atoms
+        for(int i = 0; i < atoms.length; i++) {
+            atoms[i] = new Atom(AtomInfo.ALUMINUM);
+        }
+        System.out.println("Atoms instantiated: " + atoms.length);
+        
+        double[][] atomPositions = {{0,0,0},{4.04e-10,0,0}};
+        atoms[0].setPosition(atomPositions[0]); //initialize atom positions
+        atoms[1].setPosition(atomPositions[1]);
+        System.out.println("\nAtom positions set according to given parameters");
+        if(verbose) System.out.println(Arrays.toString(atomPositions));
+        
+        for(Atom atom : atoms) {                //initialize atom velocities and momenta
+            atom.initializeVelocityVector(298);
+            atom.momentum();
+            if(verbose) System.out.println("\nVelocity (m/s): " + Arrays.toString(atom.getVelocity()) + "\nMomentum (J): " + Arrays.toString(atom.momentum()));
+        }
+        System.out.println("Atom velocities generated and momenta initialized");
+        
+        systemPotential = Atom.potentialEnergy(atoms);
+        if(verbose) System.out.println("\nPotential energy of system (J): " + systemPotential);
+        
+        //on step b of LeSar
+        
         for(int step = 0; step < NUM_TIMESTEPS; step++) {
             
         }
+        
+        //test(); //for testing
     }
     
     private static void test() {
@@ -104,15 +133,16 @@ public class Main {
         //System.out.println("Interatomic sep/m : " + distance);
         
         double[] pos = {0,0,0};
-        double[] pos2 = {1.23e-10,0,0};
+        double[] pos2 = {2e-10,0,0};
         atoms[0].setPosition(pos);
         atoms[1].setPosition(pos2);
         double distance = atoms[0].getDistanceFromNeighbor(atoms[1]);
-        System.out.println("Interatomic sep/m : " + distance);
+        System.out.println("Interatomic sep : " + distance*1e10 + " \u212B"); //UNICODE ANGSTROMS
         //System.out.println(atoms[0].toString());
         //System.out.println(atoms[0].getDistanceFromNeighbor(atoms[1]));
         System.out.println("Force vector between atoms/N : " + Arrays.toString(atoms[0].force(atoms)));
-        System.out.println("Potential energy/J : " + Atom.potentialEnergy(atoms));
+        System.out.println("Acceleration on atom i/m-s^-2 : " + Arrays.toString(atoms[0].acceleration(atoms)));
+        System.out.println("Potential energy of system/J : " + Atom.potentialEnergy(atoms));
         //unit vector testing
         
         //double[] vector = {2,0,-3};
