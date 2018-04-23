@@ -116,14 +116,14 @@ public class Atom {
     }
     
     /**
-     * Randomly generates an n-dimensional velocity using a scaled Marsaglia 
-     * polar method. This method attempts to approximate a Maxwell-Boltzmann
+     * Randomly generates an n-dimensional vel using a scaled Marsaglia 
+ polar method. This method attempts to approximate a Maxwell-Boltzmann
      * distribution by creating randomly sampled normal values scaled by a 
      * factor of sqrt(kT/m) where k is Boltzmann'equilibriumSeparation constant, T is thermodynamic 
      * temp, and m is the mass of the atom of the given species.
      * 
      * @param T Thermodynamic temperature (temperature)
-     * @return a randomly generated particle velocity
+     * @return a randomly generated particle vel
      */
     public double[] initializeVelocityVector(double T) {
         
@@ -174,7 +174,7 @@ public class Atom {
     }
     
     /**
-     * Calculates the momentum of this atom using its mass and velocity.
+     * Calculates the momentum of this atom using its mass and vel.
      * 
      * @return a vector containing this particle's momentum
      */
@@ -212,7 +212,7 @@ public class Atom {
 
     /**
      * Implements a basic Verlet algorithm to evolve the position of an atom
-     * over time. 
+     * over time. Since 
      * 
      * @param r_initial the current position of the atom
      * @param r_previous the position of the atom one timestep previously
@@ -231,6 +231,26 @@ public class Atom {
     }
     
     /**
+     * Approximates the velocity of an atom after Verlet evolution. Note that
+     * velocity is not a function of current position, rather it is a function
+     * of the position at the previous and next times.
+     * 
+     * @param r_final the position of the atom at time t+dt
+     * @param r_previous the position of the atom at time t-dt
+     * @param dt the timestep of the simulation
+     * @return the approximate velocity after evolution
+     */
+    protected double[] verletVelocity(double[] r_final, double[] r_previous, double dt) {
+        
+        double[] vel = new double[DIMENSIONS];
+        
+        for(int i = 0; i < DIMENSIONS; i++) {
+            vel[i] = (r_final[i] - r_previous[i]) / (2 * dt);
+        }
+        return vel;
+    }
+    
+    /**
      * 
      * @return the position vector of this Atom
      */
@@ -241,7 +261,7 @@ public class Atom {
     
     /**
      * 
-     * @return an array containing each component of the velocity
+     * @return an array containing each component of the vel
      */
     public double[] getVelocity() {
 
@@ -250,7 +270,7 @@ public class Atom {
     
     /**
      * 
-     * @return the magnitude of the velocity vector
+     * @return the magnitude of the vel vector
      */
     public double getSpeed() {
         
@@ -286,7 +306,7 @@ public class Atom {
     
     /**
      * 
-     * @return a string containing the state of all of this object'equilibriumSeparation fields
+     * @return a string containing the state of all of this object's fields
      */
     @Override
     public String toString() {
@@ -299,16 +319,17 @@ public class Atom {
     /**
      * Generates a random particle speed based on the Maxwell-Boltzmann 
      * distribution based on thermodynamic temperature and particle mass. Speed
-     * given in m/equilibriumSeparation.
+     * given in m/s.
+     * 
+     * @deprecated This function isn't used and instead initial particle 
+     * velocities are determined using a Marsaglia random generator and the 
+     * initializeVelocityVector() function above. It's being left in for
+     * possible future use and posterity.
      * 
      * @param T Thermodynamic temperature (temperature)
      * @param atomType The type of atom being simulated (AtomInfo)
-     * @return a randomly generated particle speed in m/equilibriumSeparation
- 
-     * Deprecated: This function isn't used and instead initial particle 
-     * velocities are determined using a Marsaglia random generator and the 
-     * initializeVelocityVector() function above. It'equilibriumSeparation being left in for
-     * possible future use and posterity.
+     * @return a randomly generated particle speed in m/s
+     * 
      */
     @Deprecated
     private double maxwellBoltzmann(double T, AtomInfo atomType) {
@@ -321,11 +342,11 @@ public class Atom {
     
     /**
      * Reassigns values to the properties of an atom. Calculates new values for
-     * velocity, momentum, their magnitudes, kinetic and potential energies,
-     * and the position of the atom.
+ vel, momentum, their magnitudes, kinetic and potential energies,
+ and the position of the atom.
      * 
-     * Deprecated: this method is going to be broken up into several smaller
-     * functions to increase modularity and readability. Flagged for removal.
+     * @deprecated This method has been broken into smaller pieces and is
+     * currently non-functional.
      * 
      * @param timestep the amount of time passed since last update (this should
      * generally be the universal timestep of the simulation)

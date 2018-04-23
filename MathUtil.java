@@ -3,7 +3,7 @@ package COMMoDORE;
 import static COMMoDORE.Main.*;
 
 /**
- * MathUtil is a class of static methods used for basic mathematical functions
+ * A class of static methods used for basic mathematical functions
  * such as finding unit vectors and magnitudes.
  *
  * @author thinkens
