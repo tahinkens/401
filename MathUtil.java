@@ -61,4 +61,19 @@ public class MathUtil {
         }
         return unit;
     }
+    
+    /**
+     * Creates a zero vector of a given length.
+     * 
+     * @param length how long the vector should be
+     * @return a vector full of 0's
+     */
+    public static double[] zeroes(int length) {
+        
+        double[] zero = new double[length];
+        for(int i = 0; i < length; i++) {
+            zero[i] = 0;
+        }
+        return zero;
+    }
 }

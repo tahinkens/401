@@ -20,7 +20,7 @@ public class Main {
     
     /**
      * Number of dimensions this simulation exists in, unitless.
-     * Acceptable values 2, 3.
+     * Acceptable values 1, 2, 3.
      */
     static final int DIMENSIONS = 3;
     /**
@@ -28,19 +28,23 @@ public class Main {
      */
     static final int N = 2;
     /**
-     * Timestep used during Verlet evolution, equilibriumSeparation. Default 5 fs.
+     * Timestep used during Verlet evolution, s. Default 5 fs.
      */
     static final double TIMESTEP = 5e-15;
     /**
-     * The number of timesteps to evolve through.
+     * The number of timesteps to equilibrate for, unitless.
      */
-    static final int NUM_TIMESTEPS = 10000;
+    static final int NUM_EQUIL_STEPS = 1500; //1500
     /**
-     * Avogadro'equilibriumSeparation number, unitless.
+     * The number of timesteps to evolve through, unitless.
+     */
+    static final int NUM_TIMESTEPS = 3000;
+    /**
+     * Avogadro's number, unitless.
      */
     static final double N_A = 6.022e23;
     /**
-     * Boltzmann'equilibriumSeparation constant, J-K^-1.
+     * Boltzmann's constant, J-K^-1.
      */
     static final double K_B = 1.38064852e-23;
     /**
@@ -75,8 +79,13 @@ public class Main {
         boolean verbose = true;
         
         double systemPotential;
+        double systemKinetic;
+        double totalEnergy;
         
-        Atom[] atoms = new Atom[2];             //instantiate new atoms
+        double[] prevPosition = MathUtil.zeroes(DIMENSIONS);
+        double[] newPosition = new double[DIMENSIONS];
+        
+        Atom[] atoms = new Atom[N];             //instantiate new atoms
         for(int i = 0; i < atoms.length; i++) {
             atoms[i] = new Atom(AtomInfo.ALUMINUM);
         }
@@ -95,15 +104,54 @@ public class Main {
         }
         System.out.println("Atom velocities generated and momenta initialized");
         
-        systemPotential = Atom.potentialEnergy(atoms);
+        systemPotential = Atom.potentialEnergy(atoms); //calculate initial system energies
         if(verbose) System.out.println("\nPotential energy of system (J): " + systemPotential);
+        systemKinetic = Atom.kineticEnergy(atoms);
+        if(verbose) System.out.println("Kinetic energy of system (J): " + systemKinetic);
+        totalEnergy = systemPotential + systemKinetic;
+        System.out.println("Total energy of system (J): " + totalEnergy);
+
+        System.out.println("\nBeginning equilibration run");
         
-        //on step b of LeSar
+        System.out.println(Arrays.toString(atoms[0].getPosition()));
+        System.out.println(Arrays.toString(atoms[1].getPosition()));
+
+        for(int step = 0; step < NUM_EQUIL_STEPS; step++) { //how do we get the previous position right?
+            if(step == 0) {
+                for(Atom atom : atoms) { //change positions of atoms for step 0 of verlet
+                    double[] currPosition = atom.getPosition();
+                    double[] velocity = atom.getVelocity();
+                    double[] accel = atom.acceleration(atoms);
+                    newPosition = new double[DIMENSIONS];
+                    
+                    atom.setPrevPosition(currPosition); //set previous position to their starting position on the lattice
+                    //System.out.println("prevPosition of atom " + Arrays.toString(atom.getPrevPosition()));
+                    
+                    for(int i = 0; i < DIMENSIONS; i++) { //use Taylor polynomial to estimate first evolution
+                        newPosition[i] = currPosition[i] - velocity[i] * TIMESTEP + 0.5 * accel[i] * (TIMESTEP*TIMESTEP);
+                    }
+                    atom.setPosition(newPosition); //assign evolved position to atom
+                    
+                    //System.out.println("newPosition of atom " + Arrays.toString(atom.getPosition()));
+                }
+                if(verbose) System.out.println("\nAtoms pre-evolved for initial Verlet integration");
+                //System.out.println(Arrays.toString(atoms[0].getPosition()));
+                //System.out.println(Arrays.toString(atoms[1].getPosition()));
+            }
+
+            for(Atom atom : atoms) {
+                prevPosition = atom.getPrevPosition();
+                newPosition = atom.verlet(atom.getPosition(), prevPosition, atom.acceleration(atoms));
+                atom.setPrevPosition(newPosition);
+                atom.setPosition(newPosition);
+                if(verbose) System.out.println('\n' + Arrays.toString(atom.getPosition()));
+            }
+        }
+        System.out.println("Equilibration finished, beginning simulation steps");
         
         for(int step = 0; step < NUM_TIMESTEPS; step++) {
             
         }
-        
         //test(); //for testing
     }
     
@@ -123,7 +171,7 @@ public class Main {
             atoms[i] = new Atom(AtomInfo.ALUMINUM);
             atoms[i].initializeVelocityVector(298);
             //atoms[i].update(TIMESTEP,atoms); //atoms is not the right argument here
-            System.out.println(Arrays.toString(atoms[i].getVelocity()) + ", " + atoms[i].getSpeed());
+            //System.out.println(Arrays.toString(atoms[i].getVelocity()) + ", " + atoms[i].getSpeed());
         }
         testLattice.setInhabitants(atoms);
         
@@ -143,6 +191,8 @@ public class Main {
         System.out.println("Force vector between atoms/N : " + Arrays.toString(atoms[0].force(atoms)));
         System.out.println("Acceleration on atom i/m-s^-2 : " + Arrays.toString(atoms[0].acceleration(atoms)));
         System.out.println("Potential energy of system/J : " + Atom.potentialEnergy(atoms));
+        System.out.println("Total kinetic energy of system (J): " + Atom.kineticEnergy(atoms));
+        System.out.println("Total energy of system (J): ");
         //unit vector testing
         
         //double[] vector = {2,0,-3};

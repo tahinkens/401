@@ -15,8 +15,7 @@ public class Atom {
     public final AtomInfo atomType;
     
     private double v, p, pe, ke; //scalar quantities
-    private double[] velocity, momentum = {0,0,0}, position = {0,0,0}; //vector quantities
-    
+    private double[] velocity, momentum = {0,0,0}, position = {0,0,0}, prevPosition; //vector quantities
     private final double m;
 
     
@@ -49,7 +48,7 @@ public class Atom {
         double[] force = this.force(atoms);
         
         for(int i = 0; i < accel.length; i++) {
-            accel[i] = (1/this.m) * force[i];
+            accel[i] = force[i] / this.m;
         }
         return accel;
     }
@@ -138,6 +137,27 @@ public class Atom {
     }
 
     /**
+     * Calculates the scalar kinetic energy of the system. Sums the
+     * kinetic energy of each atom individually.
+     * 
+     * @param atoms all the atoms in the simulation
+     * @return a double representing the total kinetic energy of the system
+     */
+    public static double kineticEnergy(Atom[] atoms) {
+        
+        double ke = 0;
+        double v;
+        AtomInfo atomType = atoms[0].atomType;
+        
+        
+        for(Atom atom : atoms) {
+            v = atom.getSpeed();
+            ke += v*v * atomType.m;
+        }
+        return ke;
+    }
+    
+    /**
      * Calculates the potential between two atoms with a potential well depth e,
      * interatomic separation of equilibriumSeparation, and equilibrium separation of r. Note: it
      * may be more computationally efficient to calculate the 6 term first and
@@ -190,12 +210,22 @@ public class Atom {
         return 0.5 * potentialEnergy;
     }
 
+    /**
+     * Implements a basic Verlet algorithm to evolve the position of an atom
+     * over time. 
+     * 
+     * @param r_initial the current position of the atom
+     * @param r_previous the position of the atom one timestep previously
+     * @param accel the acceleration vector acting on the atom
+     * @return a new position vector for the atom representing the forces 
+     * acted on it
+     */
     protected synchronized double[] verlet(double[] r_initial, double[] r_previous, double[] accel) {
         
         double[] r_final = new double[DIMENSIONS];
         
         for(int i = 0; i < DIMENSIONS; i++) {
-            r_final[i] = 2 * r_initial[i] - r_previous[i] + accel[i] * TIMESTEP*TIMESTEP;
+            r_final[i] = (2 * r_initial[i]) - r_previous[i] + (accel[i] * (TIMESTEP*TIMESTEP));
         }
         return r_final;
     }
@@ -224,7 +254,25 @@ public class Atom {
      */
     public double getSpeed() {
         
-        return v;
+        return MathUtil.magnitude(velocity);
+    }
+    
+    /**
+     * 
+     * @return the position of this atom one timestep previously
+     */
+    public double[] getPrevPosition() {
+        
+        return prevPosition;
+    }
+
+    /**
+     * 
+     * @param prevPosition 
+     */
+    public void setPrevPosition(double[] prevPosition) {
+        
+        this.prevPosition = prevPosition;
     }
     
     /**
