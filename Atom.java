@@ -13,6 +13,7 @@ import java.util.Arrays;
 public class Atom {
     
     public final AtomInfo atomType;
+    public double[][] equilibrationPositionList = new double[NUM_EQUIL_STEPS][DIMENSIONS];
     
     private double v, p, pe, ke; //scalar quantities
     private double[] velocity, momentum = {0,0,0}, position = {0,0,0}, prevPosition; //vector quantities
@@ -116,8 +117,8 @@ public class Atom {
     }
     
     /**
-     * Randomly generates an n-dimensional vel using a scaled Marsaglia 
- polar method. This method attempts to approximate a Maxwell-Boltzmann
+     * Randomly generates an n-dimensional velocity using a scaled Marsaglia 
+     * polar method. This method attempts to approximate a Maxwell-Boltzmann
      * distribution by creating randomly sampled normal values scaled by a 
      * factor of sqrt(kT/m) where k is Boltzmann'equilibriumSeparation constant, T is thermodynamic 
      * temp, and m is the mass of the atom of the given species.
@@ -135,31 +136,10 @@ public class Atom {
         }
         return velocity;
     }
-
-    /**
-     * Calculates the scalar kinetic energy of the system. Sums the
-     * kinetic energy of each atom individually.
-     * 
-     * @param atoms all the atoms in the simulation
-     * @return a double representing the total kinetic energy of the system
-     */
-    public static double kineticEnergy(Atom[] atoms) {
-        
-        double ke = 0;
-        double v;
-        AtomInfo atomType = atoms[0].atomType;
-        
-        
-        for(Atom atom : atoms) {
-            v = atom.getSpeed();
-            ke += v*v * atomType.m;
-        }
-        return ke;
-    }
     
     /**
      * Calculates the potential between two atoms with a potential well depth e,
-     * interatomic separation of equilibriumSeparation, and equilibrium separation of r. Note: it
+     * interatomic separation of r, and equilibrium separation of s. Note: it
      * may be more computationally efficient to calculate the 6 term first and
      * square it to yield the 12 term.
      * 
@@ -168,13 +148,13 @@ public class Atom {
      * @param r Interatomic separation (length)
      * @return Interatomic potential (energy)
      */
-    private double lennardJones(double e, double s, double r) {
+    protected double lennardJones(double e, double s, double r) {
 
         return 4 * e * (Math.pow((s/r),12) - Math.pow((s/r),6));
     }
     
     /**
-     * Calculates the momentum of this atom using its mass and vel.
+     * Calculates the momentum of this atom using its mass and velocity.
      * 
      * @return a vector containing this particle's momentum
      */
@@ -184,30 +164,6 @@ public class Atom {
             momentum[i] = this.atomType.m * velocity[i]; //p = mv
         }
         return momentum;
-    }
-    
-    /**
-     * Calculates the potential energy of an atomic system as a function of the
-     * positions of the particles. More precisely, the interatomic potential of
-     * each atom on every other atom is calculated using a standard 
-     * Lennard-Jones potential. This energy can then be differentiated with 
-     * respect to a particle'equilibriumSeparation position to find the force on that particle.
-     * 
-     * @param atoms an array containing all of the atoms in the simulation
-     * @return the potential energy 
-     */
-    protected static double potentialEnergy(Atom[] atoms) {
-        
-        double potentialEnergy = 0;
-        AtomInfo species = atoms[0].atomType; //assume that every Atom in atoms is same species
-        
-        for(Atom atomi : atoms) {
-            for(Atom atomj : atoms) {
-                if(!atomj.equals(atomi)) //only sum contributions from different atoms
-                    potentialEnergy += atomj.lennardJones(species.homopotentialWellDepth,species.equilibriumSeparation,atomj.getDistanceFromNeighbor(atomi));
-            }
-        }
-        return 0.5 * potentialEnergy;
     }
 
     /**
@@ -237,15 +193,14 @@ public class Atom {
      * 
      * @param r_final the position of the atom at time t+dt
      * @param r_previous the position of the atom at time t-dt
-     * @param dt the timestep of the simulation
      * @return the approximate velocity after evolution
      */
-    protected double[] verletVelocity(double[] r_final, double[] r_previous, double dt) {
+    protected double[] verletVelocity(double[] r_final, double[] r_previous) {
         
         double[] vel = new double[DIMENSIONS];
         
         for(int i = 0; i < DIMENSIONS; i++) {
-            vel[i] = (r_final[i] - r_previous[i]) / (2 * dt);
+            vel[i] = (r_final[i] - r_previous[i]) / (2d * TIMESTEP);
         }
         return vel;
     }
@@ -261,7 +216,7 @@ public class Atom {
     
     /**
      * 
-     * @return an array containing each component of the vel
+     * @return an array containing each component of the velocity
      */
     public double[] getVelocity() {
 
@@ -270,7 +225,7 @@ public class Atom {
     
     /**
      * 
-     * @return the magnitude of the vel vector
+     * @return the magnitude of the velocity vector
      */
     public double getSpeed() {
         
@@ -304,6 +259,14 @@ public class Atom {
         this.position = pos;
     }
     
+    /**
+     * 
+     * @param velocity 
+     */
+    public void setVelocity(double[] velocity) {
+        
+        this.velocity = velocity;
+    }
     /**
      * 
      * @return a string containing the state of all of this object's fields
