@@ -8,8 +8,7 @@ import static COMMoDORE.Main.*;
  */
 public class Simulation {
     
-    int N;
-    
+
     /**
      * Calculates the scalar kinetic energy of the system. Sums the
      * kinetic energy of each atom individually.
@@ -51,7 +50,7 @@ public class Simulation {
                     potentialEnergy += atomj.lennardJones(species.homopotentialWellDepth,species.equilibriumSeparation,atomj.getDistanceFromNeighbor(atomi));
             }
         }
-        return 0.5 * potentialEnergy;
+        return 0.5d * potentialEnergy;
     }
     
     protected static double temperature(double ke, int N) {

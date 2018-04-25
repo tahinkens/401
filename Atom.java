@@ -16,7 +16,7 @@ public class Atom {
     public double[][] equilibrationPositionList = new double[NUM_EQUIL_STEPS][DIMENSIONS];
     
     private double v, p, pe, ke; //scalar quantities
-    private double[] velocity, momentum = {0,0,0}, position = {0,0,0}, prevPosition; //vector quantities
+    private double[] velocity, momentum, position = new double[DIMENSIONS], prevPosition; //vector quantities
     private final double m;
 
     
@@ -43,14 +43,15 @@ public class Atom {
      * @param atoms all of the atoms in the simulation
      * @return a vector representing the acceleration on this atom
      */
-    protected synchronized double[] acceleration(Atom[] atoms) {
+    protected double[] acceleration(Atom[] atoms) {
         
         double[] accel = new double[DIMENSIONS];
         double[] force = this.force(atoms);
         
-        for(int i = 0; i < accel.length; i++) {
-            accel[i] = force[i] / this.m;
+        for(int i = 0; i < DIMENSIONS; i++) {
+            accel[i] = force[i] / this.atomType.m;
         }
+        //System.out.println("Acceleration: " + Arrays.toString(accel)); //debug
         return accel;
     }
     
@@ -77,7 +78,7 @@ public class Atom {
      */
     protected synchronized double[] force(Atom[] atoms) {
 
-        double[] f = {0,0,0}, lastf = {0,0,0}; //the force vector
+        double[] f = {0,0,0}; //the force vector
         double dLJ; //the derivative of the lennard jones potential
         double[] r_hat, r1 = this.position, r2, diff = new double[DIMENSIONS]; //to find the relative pos vector between two atoms
 
@@ -95,6 +96,7 @@ public class Atom {
                 }
             }
         }
+        //System.out.println("\nForce on atom: " + Arrays.toString(f)); //debug
         return f;
     }
     
@@ -120,7 +122,7 @@ public class Atom {
      * Randomly generates an n-dimensional velocity using a scaled Marsaglia 
      * polar method. This method attempts to approximate a Maxwell-Boltzmann
      * distribution by creating randomly sampled normal values scaled by a 
-     * factor of sqrt(kT/m) where k is Boltzmann'equilibriumSeparation constant, T is thermodynamic 
+     * factor of sqrt(kT/m) where k is Boltzmann's constant, T is thermodynamic 
      * temp, and m is the mass of the atom of the given species.
      * 
      * @param T Thermodynamic temperature (temperature)
@@ -160,6 +162,8 @@ public class Atom {
      */
     protected double[] momentum() {
         
+        momentum = new double[DIMENSIONS];
+        
         for(int i = 0; i < DIMENSIONS; i++) {
             momentum[i] = this.atomType.m * velocity[i]; //p = mv
         }
@@ -181,9 +185,25 @@ public class Atom {
         double[] r_final = new double[DIMENSIONS];
         
         for(int i = 0; i < DIMENSIONS; i++) {
-            r_final[i] = (2 * r_initial[i]) - r_previous[i] + (accel[i] * (TIMESTEP*TIMESTEP));
+            r_final[i] = (2d * r_initial[i]) - r_previous[i] + (accel[i] * (TIMESTEP*TIMESTEP));
         }
         return r_final;
+    }
+    
+    protected synchronized double[] verlet2(Atom[] atoms) {
+        
+        //double dt = TIMESTEP;
+        //double[] r_t = positionList[step], r_tminusdt = positionList[step - 1], r_tplusdt = new double[DIMENSIONS];
+        double[] r_t = this.position, r_tminusdt = this.prevPosition, r_tplusdt = new double[DIMENSIONS];
+        double[] accel = this.acceleration(atoms);
+        
+        for(int i = 0; i < DIMENSIONS; i++) {
+            r_tplusdt[i] = (2d * r_t[i]) - r_tminusdt[i] + (accel[i] * (TIMESTEP*TIMESTEP));
+        }
+        this.prevPosition = r_t;
+        this.position = r_tplusdt;
+        
+        return r_tplusdt;
     }
     
     /**
@@ -195,13 +215,15 @@ public class Atom {
      * @param r_previous the position of the atom at time t-dt
      * @return the approximate velocity after evolution
      */
-    protected double[] verletVelocity(double[] r_final, double[] r_previous) {
+    protected synchronized double[] verletVelocity(double[] r_final, double[] r_previous) {
         
         double[] vel = new double[DIMENSIONS];
         
         for(int i = 0; i < DIMENSIONS; i++) {
-            vel[i] = (r_final[i] - r_previous[i]) / (2d * TIMESTEP);
+            vel[i] = (r_final[i] - r_previous[i]) / (2f * TIMESTEP);
         }
+        this.velocity = vel;
+        //System.out.println("verletVel: " + Arrays.toString(vel));
         return vel;
     }
     

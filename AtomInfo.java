@@ -11,7 +11,7 @@ package COMMoDORE;
 public enum AtomInfo {
     
     HELIUM(2,6.646632348e-27,-1,-1,-1,-1,-1),
-    ALUMINUM(13,4.48039e-27,1.23e-10,6.111e-22,4.04e-10,4.04e-10,4.04e-10), //eq sep (eq. sep from Totten and Mackenzie)
+    ALUMINUM(13,4.48039e-26,1.23e-10,6.111e-22,4.04e-10,4.04e-10,4.04e-10), //eq sep (eq. sep from Totten and Mackenzie)
     COPPER(29,1.0552308203254732e-25,-1,-1,-1,-1,-1),
     XENON(54,2.1802e-25,-1,-1,-1,-1,-1);
     

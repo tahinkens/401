@@ -21,19 +21,19 @@ public class Main {
      * Number of dimensions this simulation exists in, unitless.
      * Acceptable values 1, 2, 3.
      */
-    static final int DIMENSIONS = 3;
+    static final int DIMENSIONS = 1;
     /**
      * Number of atoms to be simulated, unitless.
      */
     static final int N = 2;
     /**
-     * Timestep used during Verlet evolution, s. Default 5 fs.
+     * Timestep used during Verlet evolution, s. Default 1 fs.
      */
     static final double TIMESTEP = 1e-15;
     /**
      * The number of timesteps to equilibrate for, unitless.
      */
-    static final int NUM_EQUIL_STEPS = 1000; //1500
+    static final int NUM_EQUIL_STEPS = 5000; //1500
     /**
      * The number of timesteps to evolve through, unitless.
      */
@@ -66,7 +66,7 @@ public class Main {
     /**
      * Uniform random number generator.
      */
-    static final Random RNG = new Random();
+    static final Random RNG = new Random(666+1);
     
     /**
      * 
@@ -117,7 +117,7 @@ public class Main {
         /**
          * Print excessive amounts of simulation information?.
          */
-        boolean verbose = true;
+        boolean verbose = false;
         /**
          * Potential energy of the system, J.
          */
@@ -147,9 +147,9 @@ public class Main {
          */
         double[] newPosition;
         /**
-         * An array containing the position of every atom at every timestep.
+         * Velocity of an atom at time t+dt. Used for obtaining temperature.
          */
-        double[][][] positionList = new double[N][NUM_TIMESTEPS][DIMENSIONS];
+        double[] newVelocity;
         
         
         //Begin logic
@@ -159,16 +159,17 @@ public class Main {
         }
         System.out.println("Atoms instantiated: " + atoms.length);
         
-        double[][] atomPositions = {{0,0,0},{4.04e-10,0,0}};
+        double[][] atomPositions = {{0},{1.23e-10*R_MIN_FACTOR}};
         atoms[0].setPosition(atomPositions[0]); //initialize atom positions
         atoms[1].setPosition(atomPositions[1]);
         System.out.println("\nAtom positions set according to given parameters");
         if(verbose) System.out.println(Arrays.toString(atomPositions));
         
-        for(Atom atom : atoms) {                //initialize atom velocities and momenta
-            atom.initializeVelocityVector(temperature);
-            atom.momentum();
-            if(verbose) System.out.println("\nVelocity (m/s): " + Arrays.toString(atom.getVelocity()) + "\nMomentum (J): " + Arrays.toString(atom.momentum()));
+        for(int j = 0; j < N; j++) {                //initialize atom velocities and momenta
+            atoms[j].initializeVelocityVector(temperature);
+            atoms[j].momentum();
+            if(verbose) System.out.println("\nVelocity (m/s): " + Arrays.toString(atoms[j].getVelocity()) + 
+                    "\nMomentum (J): " + Arrays.toString(atoms[j].momentum()));
         }
         System.out.println("Atom velocities generated and momenta initialized");
         
@@ -186,7 +187,6 @@ public class Main {
                 for(int j = 0; j < N; j++) { 
                     Atom atom = atoms[j];
                     currPosition = atom.getPosition();
-                    System.out.println(Arrays.toString(currPosition));
                     double[] velocity = atom.getVelocity();
                     double[] accel = atom.acceleration(atoms);
                     newPosition = new double[DIMENSIONS];
@@ -195,75 +195,62 @@ public class Main {
                     
                     atom.setPrevPosition(currPosition); //set previous position to their starting position on the lattice
                     for(int i = 0; i < DIMENSIONS; i++) { //use Taylor polynomial to estimate first evolution
-                        newPosition[i] = currPosition[i] - velocity[i] * TIMESTEP + 0.5 * accel[i] * (TIMESTEP*TIMESTEP);
+                        newPosition[i] = currPosition[i] - (velocity[i] * TIMESTEP) + (0.5d * accel[i] * (TIMESTEP*TIMESTEP));
                     }
                     atom.equilibrationPositionList[step+1] = newPosition;
                     atom.setPosition(newPosition); //assign evolved position to atom
-                    atom.setVelocity(atom.verletVelocity(atom.getPosition(),atom.getPrevPosition())); //NEW
-                    System.out.println("\nVelocity (m/s): " + Arrays.toString(atoms[0].getVelocity()));
-                    System.out.println("\nVelocity (m/s): " + Arrays.toString(atoms[1].getVelocity())); //debug
+                    atom.setVelocity(atom.verletVelocity(atom.getPosition(),atom.getPrevPosition()));
+
+                    atoms[j] = atom;
+                    if(verbose) System.out.println("\nAtoms pre-evolved for initial Verlet integration\nBeginning Verlet evolution");
                 }
-                if(verbose) System.out.println("\nAtoms pre-evolved for initial Verlet integration\nBeginning Verlet evolution");
+                
             }
             else {
-                for(Atom atom : atoms) { //evolve atoms using Verlet algorithm
-                    currPosition = atom.equilibrationPositionList[step];    //r(t)
-                    prevPosition = atom.equilibrationPositionList[step - 1];//r(t - dt)
-                    
-                    //System.out.println("currPosition: " + Arrays.toString(currPosition));
-                    //System.out.println("prevPosition: " + Arrays.toString(prevPosition));
-                    
-                    newPosition = atom.verlet(currPosition,prevPosition,atom.acceleration(atoms));
-                    atom.equilibrationPositionList[step + 1] = newPosition; //r(t + dt)
-                    //System.out.println("newPosition: " + Arrays.toString(newPosition));
-                    
-                    atom.setVelocity(atom.verletVelocity(atom.equilibrationPositionList[step+1],atom.equilibrationPositionList[step-1]));
-                    
-                    atom.setPosition(newPosition);
-                    
-                    atom.setPrevPosition(atom.equilibrationPositionList[step-1]);
-                    
-                    System.out.println(Arrays.toString(atom.equilibrationPositionList[step-1]));
-                    System.out.println(Arrays.toString(atom.equilibrationPositionList[step]));
-                    System.out.println(Arrays.toString(atom.equilibrationPositionList[step+1]));
-                    
-                    
-                    //System.out.println("Velocity (m/s): " + Arrays.toString(atoms[0].getVelocity()));
-                    //System.out.println("Velocity (m/s): " + Arrays.toString(atoms[1].getVelocity())); //debug
-                    //atom.setPosition(newPosition);
-                    
-                    
-                    //atom.equilibrationPositionList[step - 1] = atom.equilibrationPositionList[step];
-                    //atom.equilibrationPositionList[step + 1] = newPosition;
+                for(int j = 0; j < N; j++) { //evolve atoms using Verlet algorithm
+                    currPosition = atoms[j].equilibrationPositionList[step];    //r(t)
+                    prevPosition = atoms[j].equilibrationPositionList[step - 1];//r(t - dt)
 
-                    //System.out.println("Position : " + Arrays.toString(atom.getPosition()));
+                    newPosition = atoms[j].verlet(currPosition,prevPosition,atoms[j].acceleration(atoms)); //r(t + dt)
+                    atoms[j].equilibrationPositionList[step + 1] = newPosition; //r(t + dt)
+
+                    newVelocity = atoms[j].verletVelocity(newPosition,prevPosition);
+                    atoms[j].setPosition(newPosition);
+                    
+                    atoms[j].setVelocity(newVelocity);
+                    
+                    atoms[j].setPrevPosition(atoms[j].equilibrationPositionList[step]);
                 }
             }
-            
-            
+            //System.out.println(Arrays.toString(atoms));
+
             systemKinetic = Simulation.kineticEnergy(atoms);
             systemPotential = Simulation.potentialEnergy(atoms);
             totalEnergy = systemKinetic + systemPotential;
             temperature = Simulation.temperature(systemKinetic,N);
-            System.out.println("K :" + systemKinetic);
-            System.out.println("U :" + systemPotential);
-            System.out.println("U + K: " + totalEnergy);
-            System.out.println("Temp: " + temperature + "\n\n");
+            //System.out.println(systemKinetic / (AtomInfo.ALUMINUM.homopotentialWellDepth * N));
+            //System.out.println(systemPotential / (AtomInfo.ALUMINUM.homopotentialWellDepth * N));
+            //System.out.println(totalEnergy / (AtomInfo.ALUMINUM.homopotentialWellDepth * N));
+            //System.out.println(temperature);
             
             //add energy data/thermo averages to arrays
             eqKineticData[step] = systemKinetic;
             eqPotentialData[step] = systemPotential;
             eqTotalEnergyData[step] = systemKinetic + systemPotential;
         }
-        System.out.println("Equilibration finished, beginning simulation steps");
+        //System.out.println("Equilibration finished, beginning simulation steps");
         
         for(int step = 0; step < NUM_TIMESTEPS; step++) {
             
         }
         
-        for(int i = 0; i < atoms[0].equilibrationPositionList.length; i ++ ) {
-            System.out.println(Arrays.toString(atoms[1].equilibrationPositionList[i]));
+        for(int i = 0; i < atoms[0].equilibrationPositionList.length; i++) {
+            //System.out.println(Arrays.toString(atoms[0].equilibrationPositionList[i]));
+            //System.out.println(Arrays.toString(atoms[1].equilibrationPositionList[i]));
+            System.out.println(atoms[1].equilibrationPositionList[i][0]);
+            //System.out.println(atoms[0].equilibrationPositionList[i][0] - atoms[1].equilibrationPositionList[i][0]); //interatomic distance
         }
+        //System.out.println(atoms[0].getSpeed());
         //test(); //for testing
     }
     
@@ -277,15 +264,15 @@ public class Main {
         
         
         Lattice testLattice = new Lattice(LATTICE,2,AtomInfo.ALUMINUM,true);
-        Atom[] atoms = new Atom[testLattice.getInhabitants().length];
+        //Atom[] atoms = new Atom[testLattice.getInhabitants().length];
         for(int i = 0; i < testLattice.getInhabitants().length; i++) {
             //testLattice.setInhabitants(atoms);
-            atoms[i] = new Atom(AtomInfo.ALUMINUM);
-            atoms[i].initializeVelocityVector(298);
+            //atoms[i] = new Atom(AtomInfo.ALUMINUM);
+            //atoms[i].initializeVelocityVector(298);
             //atoms[i].update(TIMESTEP,atoms); //atoms is not the right argument here
             //System.out.println(Arrays.toString(atoms[i].getVelocity()) + ", " + atoms[i].getSpeed());
         }
-        testLattice.setInhabitants(atoms);
+        //testLattice.setInhabitants(atoms);
         
         //System.out.println(Arrays.toString(testLattice.getInhabitants()));
         
@@ -294,17 +281,39 @@ public class Main {
         
         double[] pos = {0,0,0};
         double[] pos2 = {2e-10,0,0};
+        
+        Atom[] atoms = new Atom[N];
+        for(int i = 0; i < atoms.length; i++) {
+            atoms[i] = new Atom(AtomInfo.ALUMINUM);
+            atoms[i].initializeVelocityVector(298);
+        }
         atoms[0].setPosition(pos);
         atoms[1].setPosition(pos2);
-        double distance = atoms[0].getDistanceFromNeighbor(atoms[1]);
-        System.out.println("Interatomic sep : " + distance*1e10 + " \u212B"); //UNICODE ANGSTROMS
-        //System.out.println(atoms[0].toString());
-        //System.out.println(atoms[0].getDistanceFromNeighbor(atoms[1]));
-        System.out.println("Force vector between atoms/N : " + Arrays.toString(atoms[0].force(atoms)));
-        System.out.println("Acceleration on atom i/m-s^-2 : " + Arrays.toString(atoms[0].acceleration(atoms)));
-        //System.out.println("Potential energy of system/J : " + Atom.potentialEnergy(atoms));
-        //System.out.println("Total kinetic energy of system (J): " + Atom.kineticEnergy(atoms));
-        System.out.println("Total energy of system (J): ");
+        
+        for(int i = 0; i < NUM_EQUIL_STEPS; i++) {
+            for(int j = 0; j < N; j++) {
+                if(i != 0) atoms[j].verlet2(atoms);
+                else {
+                    double[] newPos = new double[DIMENSIONS];
+                    for(int k = 0; k < DIMENSIONS; k++) {
+                        newPos[k] = atoms[j].getPosition()[k] - (atoms[j].getVelocity()[k] * TIMESTEP) + (0.5d * atoms[j].acceleration(atoms)[k] * (TIMESTEP*TIMESTEP));
+                    }
+                    atoms[j].setPrevPosition(pos2);
+                    atoms[j].setPosition(newPos);
+                }
+                System.out.println(Arrays.toString(atoms[j].getPosition()));
+            }
+        }
+        
+//        double distance = atoms[0].getDistanceFromNeighbor(atoms[1]);
+//        System.out.println("Interatomic sep : " + distance*1e10 + " \u212B"); //UNICODE ANGSTROMS
+//        //System.out.println(atoms[0].toString());
+//        //System.out.println(atoms[0].getDistanceFromNeighbor(atoms[1]));
+//        System.out.println("Force vector between atoms/N : " + Arrays.toString(atoms[0].force(atoms)));
+//        System.out.println("Acceleration on atom i/m-s^-2 : " + Arrays.toString(atoms[0].acceleration(atoms)));
+//        //System.out.println("Potential energy of system/J : " + Atom.potentialEnergy(atoms));
+//        //System.out.println("Total kinetic energy of system (J): " + Atom.kineticEnergy(atoms));
+//        System.out.println("Total energy of system (J): ");
         //unit vector testing
         
         //double[] vector = {2,0,-3};

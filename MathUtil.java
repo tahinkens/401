@@ -19,8 +19,14 @@ public class MathUtil {
      * @return a double containing the length of the vector
      */
     public static double magnitude(double[] vector) {
+
+        double radicand = 0;
         
-        return Math.sqrt(vector[0]*vector[0] + vector[1]*vector[1] + vector[2]*vector[2]);
+        for(int i = 0; i < DIMENSIONS; i++) {
+            radicand += vector[i]*vector[i];
+        }
+        return Math.sqrt(radicand);
+        //return Math.sqrt(vector[0]*vector[0] + vector[1]*vector[1] + vector[2]*vector[2]);
     }
     
     /**
@@ -54,7 +60,7 @@ public class MathUtil {
     public static double[] unitVector(double[] vector) {
         
         double[] unit = new double[vector.length];
-        double magnitude = Math.sqrt(vector[0]*vector[0] + vector[1]*vector[1] + vector[2]*vector[2]);
+        double magnitude = magnitude(vector);
         
         for(int i = 0; i < vector.length; i++) {
             unit[i] = vector[i] / magnitude;
